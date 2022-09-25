@@ -57,7 +57,7 @@ func (p ProtocolServer) Response(data map[string]string) ([]byte, string) {
 	result.WriteString(key)
 	return []byte(result.String()), key
 }
-func (p ProtocolServer) ResponseError(err string) ([]byte, string) {
+func (p ProtocolServer) ResponseError(err error) ([]byte, string) {
 	key := p.pow.GenerateUniqKey()
-	return []byte(fmt.Sprintf("%s;ERROR:%s;%s", ProtocolVersion, err, key)), key
+	return []byte(fmt.Sprintf("%s;ERROR:%s;%s", ProtocolVersion, err.Error(), key)), key
 }
