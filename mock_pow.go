@@ -12,3 +12,12 @@ func (mp MockPow) ValidateMessage(version, message string) error {
 	}
 	return nil
 }
+func (mp MockPow) GetComplexity() int {
+	return 1
+}
+func (mp MockPow) GetVersion() string {
+	return "0.1.0"
+}
+func (mp MockPow) SignMessage(version, message string, complexity int) (string, error) {
+	return "OK", nil
+}

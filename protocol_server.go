@@ -2,12 +2,13 @@ package tcpprotocol
 
 import (
 	"fmt"
-	"strings"
 )
 
 type PowInteface interface {
 	GenerateUniqKey() string
 	ValidateMessage(version, message string) error
+	GetComplexity() int
+	GetVersion() string
 }
 
 type ProtocolServer struct {
@@ -20,44 +21,29 @@ func NewProtocolServer(pow PowInteface) *ProtocolServer {
 	}
 }
 
-func (p ProtocolServer) Request(data []byte, key string) (*map[string]string, error) {
-	payload := strings.Split(string(data), ";")
-	if len(payload) <= 1 {
-		return nil, ErrWrongRequestFormat
-	}
-	if payload[0] != ProtocolVersion {
-		return nil, ErrInvalidProtocolVersion
-	}
-	pkey := strings.Split(payload[len(payload)-1], ":")
-	if pkey[0] != key {
-		return nil, ErrInvalidRequestKey
-	}
-	if err := p.pow.ValidateMessage(POWVersion, string(data)); err != nil {
+func (p ProtocolServer) Request(data []byte, key string) (map[string]string, error) {
+	result, err := parseToMap(data, p.pow.GetVersion())
+	if err != nil {
 		return nil, err
 	}
-	payload = payload[1 : len(payload)-1]
-	result := make(map[string]string)
-	for _, item := range payload {
-		kv := strings.Split(item, ":")
-		if len(kv) != 2 {
-			return nil, ErrInvalidPayloadFormat
-		}
-		result[kv[0]] = kv[1]
+	if mesKey, ok := result["POW_KEY"]; !ok || mesKey != key {
+		return nil, ErrInvalidRequestKey
 	}
-	return &result, nil
+	if err := p.pow.ValidateMessage(p.pow.GetVersion(), string(data)); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (p ProtocolServer) Response(data map[string]string) ([]byte, string) {
-	var result strings.Builder
-	result.WriteString(ProtocolVersion + ";")
-	for k, v := range data {
-		result.WriteString(fmt.Sprintf("%s:%s;", k, v))
-	}
+	data["complexity"] = fmt.Sprintf("%d", p.pow.GetComplexity())
 	key := p.pow.GenerateUniqKey()
-	result.WriteString(key)
-	return []byte(result.String()), key
+	data["POW_KEY"] = key
+	return []byte(parseToBytes(data, p.pow.GetVersion())), key
 }
 func (p ProtocolServer) ResponseError(err error) ([]byte, string) {
-	key := p.pow.GenerateUniqKey()
-	return []byte(fmt.Sprintf("%s;ERROR:%s;%s", ProtocolVersion, err.Error(), key)), key
+	data := map[string]string{
+		"error": err.Error(),
+	}
+	return p.Response(data)
 }
