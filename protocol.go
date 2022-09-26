@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	ProtocolVersion = "0.1.0"
-	OK              = iota
+	ProtocolVersion = "0.1.3"
 )
 
 var (
@@ -16,14 +15,16 @@ var (
 	ErrInvalidRequestKey      = fmt.Errorf("invalid request key")
 	ErrInvalidPayloadFormat   = fmt.Errorf("the payload must be in key:value format")
 	ErrInvalidPowVersion      = fmt.Errorf("invalid pow version")
+	ErrRequestNotSigned       = fmt.Errorf("request not signed")
 )
 
 func parseToMap(data []byte, powVersion string) (map[string]string, error) {
 
 	payload := strings.Split(string(data), ";")
 	if strings.HasSuffix(string(data), ";") {
-		payload = payload[:len(payload)-1]
+		return nil, ErrRequestNotSigned
 	}
+	payload = payload[:len(payload)-1]
 	if len(payload) <= 1 {
 		return nil, ErrWrongRequestFormat
 	}
