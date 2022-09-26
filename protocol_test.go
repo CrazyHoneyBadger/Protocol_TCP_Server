@@ -1,13 +1,35 @@
 package tcpprotocol
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+type TestCase struct {
+	data          []byte
+	expected      map[string]string
+	expectedError error
+	message       string
+}
+
+var tc = []TestCase{
+	TestCase{
+		data: []byte("PROT_VER:0.1.0;POW_VER:0.1.0;KEY:OK"),
+		expected: map[string]string{
+			"PROT_VER": "0.1.0",
+			"POW_VER":  "0.1.0",
+			"KEY":      "OK",
+		},
+		expectedError: nil,
+		message:       "TestParseToMap",
+	},
+}
+
 func TestParseToMap(t *testing.T) {
-	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;KEY:OK")
+	dataStr := fmt.Sprintf("PROT_VER:%s;POW_VER:0.1.0;KEY:OK;", ProtocolVersion)
+	data := []byte(dataStr)
 	powVersion := "0.1.0"
 	result, err := parseToMap(data, powVersion)
 	assert.Nil(t, err)
@@ -30,21 +52,21 @@ func TestParseToMap_RandomString(t *testing.T) {
 	assert.Nil(t, result)
 }
 func TestParseToMap_NotValue(t *testing.T) {
-	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;KEY")
+	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;KEY;")
 	powVersion := "0.1.0"
 	result, err := parseToMap(data, powVersion)
 	assert.ErrorIs(t, err, ErrInvalidPayloadFormat)
 	assert.Nil(t, result)
 }
 func TestParseToMap_NotKey(t *testing.T) {
-	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;:OK")
+	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;:OK;")
 	powVersion := "0.1.0"
 	result, err := parseToMap(data, powVersion)
 	assert.ErrorIs(t, err, ErrInvalidPayloadFormat)
 	assert.Nil(t, result)
 }
 func TestParseToMap_NotKeyAndValue(t *testing.T) {
-	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;:")
+	data := []byte("PROT_VER:0.1.0;POW_VER:0.1.0;:;")
 	powVersion := "0.1.0"
 	result, err := parseToMap(data, powVersion)
 	assert.ErrorIs(t, err, ErrInvalidPayloadFormat)
@@ -81,7 +103,7 @@ func TestParseToMap_InvalidPowVersionAndProtocolVersion(t *testing.T) {
 	assert.Nil(t, result)
 }
 func TestParseToMap_NotProtocolVersion(t *testing.T) {
-	data := []byte("POW_VER:0.1.0;KEY:OK")
+	data := []byte("POW_VER:0.1.0;KEY:OK;")
 	powVersion := "0.1.1"
 	result, err := parseToMap(data, powVersion)
 	assert.ErrorIs(t, err, ErrInvalidProtocolVersion)
