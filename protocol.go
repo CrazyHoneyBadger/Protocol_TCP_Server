@@ -33,7 +33,7 @@ func parseToMap(data []byte, powVersion string) (map[string]string, error) {
 	if prtVersion, ok := result["PROT_VER"]; !ok || prtVersion != ProtocolVersion {
 		return nil, ErrInvalidProtocolVersion
 	}
-	if powVersion, ok := result["POW_VER"]; !ok || powVersion != powVersion {
+	if powVer, ok := result["POW_VER"]; !ok || powVer != powVersion {
 		return nil, ErrWrongRequestFormat
 	}
 	return result, nil
